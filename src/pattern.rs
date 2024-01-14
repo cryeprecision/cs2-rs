@@ -23,11 +23,52 @@ impl PatternByte {
     fn is_wildcard(self) -> bool {
         matches!(self, PatternByte::Wildcard)
     }
+    fn as_byte(self) -> Option<u8> {
+        match self {
+            PatternByte::Wildcard => None,
+            PatternByte::Byte(byte) => Some(byte),
+        }
+    }
+    fn matches(self, byte: u8) -> bool {
+        match self {
+            PatternByte::Wildcard => true,
+            PatternByte::Byte(b) => b == byte,
+        }
+    }
 }
 
 #[derive(Debug)]
 struct Pattern {
     inner: Vec<PatternByte>,
+}
+
+impl Pattern {
+    fn matches(pattern: &[PatternByte], hay: &[u8]) -> bool {
+        if pattern.len() > hay.len() {
+            false
+        } else {
+            pattern.iter().zip(hay.iter()).all(|(&p, &b)| p.matches(b))
+        }
+    }
+
+    pub fn find(&self, hay: &[u8]) -> Option<usize> {
+        let skipped_wildcards = self.inner.iter().position(|p| !p.is_wildcard())?;
+
+        let hay = &hay[skipped_wildcards..];
+        let pattern = &self.inner[skipped_wildcards..];
+
+        // SAFETY: The pattern must contain at least one non-wildcard
+        let first_byte = pattern[0].as_byte().unwrap();
+
+        let mut offset = 0usize;
+        while let Some(sub_offset) = memchr::memchr(first_byte, &hay[offset..]) {
+            if Self::matches(pattern, &hay[offset + sub_offset..]) {
+                return Some(offset + sub_offset);
+            }
+            offset += sub_offset;
+        }
+        None
+    }
 }
 
 impl FromStr for Pattern {
@@ -136,5 +177,12 @@ mod test_pattern {
         // double space is not cool
         let err = Pattern::from_str("00  00").unwrap_err();
         assert_eq!(err, Error::Malformed);
+    }
+
+    #[test]
+    fn finds() {
+        let pattern: Pattern = "? 01 ? 03".parse().unwrap();
+        let hay = &[0x00, 0x01, 0x02, 0x03];
+        assert_eq!(pattern.find(hay), Some(0));
     }
 }
