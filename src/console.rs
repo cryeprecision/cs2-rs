@@ -5,11 +5,13 @@ use windows::Win32::Storage::FileSystem::*;
 use windows::Win32::System::Console::*;
 use windows::Win32::UI::WindowsAndMessaging::{PostMessageA, WM_CLOSE};
 
+#[allow(dead_code)]
 pub struct Console {
     handle: HANDLE,
 }
 
 impl Console {
+    #[allow(dead_code)]
     pub unsafe fn attach_console() -> anyhow::Result<Console> {
         AllocConsole().context("couldn't allocate console")?;
 
@@ -30,6 +32,7 @@ impl Console {
         Ok(Console { handle })
     }
 
+    #[allow(dead_code)]
     pub unsafe fn detach_console(self: Console) -> anyhow::Result<()> {
         CloseHandle(self.handle).context("couldn't close console handle")?;
         FreeConsole().context("couldn't free console")?;
