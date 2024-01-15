@@ -82,5 +82,5 @@ pub unsafe fn capture_interface(
 
     (!interface.is_null())
         .then_some(interface)
-        .context("create function returned nullptr")
+        .context("interface create function returned nullptr")
 }

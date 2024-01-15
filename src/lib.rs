@@ -6,11 +6,13 @@ mod logger;
 mod module;
 mod pattern;
 mod ptr;
+mod str;
 mod util;
 
-use std::ffi::c_void;
+use std::ffi::{c_char, c_void};
 
 use anyhow::Context;
+use retour::GenericDetour;
 use windows::core::s;
 use windows::Win32::Foundation::*;
 use windows::Win32::System::SystemServices::*;
@@ -20,6 +22,7 @@ use crate::interfaces::engine_client::EngineClient;
 use crate::interfaces::{register_iterator, InterfaceRegister};
 use crate::module::Module;
 use crate::pattern::Pattern;
+use crate::ptr::get_vfunc_ptr_as;
 
 #[no_mangle]
 #[allow(non_snake_case)]
@@ -103,11 +106,36 @@ unsafe fn on_dll_process_attach() -> anyhow::Result<()> {
         log::info!("found 'engine2.dll' interface: {:?}", register.name());
     }
 
-    let engine = interfaces::capture_interface(engine_2_register_list, "Source2EngineToClient001")
-        .context("couldn't create interface 'Source2EngineToClient001'")?;
+    let engine_ptr =
+        interfaces::capture_interface(engine_2_register_list, "Source2EngineToClient001")
+            .context("couldn't create interface 'Source2EngineToClient001'")?;
+    let engine = EngineClient::new(engine_ptr);
 
-    log::info!("is_connected: {}", EngineClient::is_connected(engine));
-    log::info!("is_in_name: {}", EngineClient::is_in_game(engine));
+    log::info!("is_connected: {}", engine.is_connected());
+    log::info!("is_in_game: {}", engine.is_in_game());
+    log::info!("get_level_name: {:?}", engine.get_level_name());
+
+    // example of hooking a function
+    {
+        // type of the function we want to hook
+        type LevelNameFn = unsafe extern "win64" fn(this: *mut u8) -> *const c_char;
+
+        // our hook that is called instead of the original function
+        unsafe extern "win64" fn level_name_hook_fn(_: *mut u8) -> *const c_char {
+            log::info!("hello from inside the hooked get_level_name");
+            s!("oof-software").0 as _
+        }
+
+        // this does some sanity checks
+        let level_name_hook =
+            GenericDetour::<LevelNameFn>::new(get_vfunc_ptr_as(engine_ptr, 53), level_name_hook_fn)
+                .context("create get_level_name hook")?;
+
+        // enable the hook, call the function and disable the hook again
+        level_name_hook.enable().context("enable hook")?;
+        log::info!("hooked get_level_name: {:?}", engine.get_level_name());
+        level_name_hook.disable().context("remove hook")?;
+    }
 
     Err(anyhow::anyhow!("error to cause dll unload"))
 }
