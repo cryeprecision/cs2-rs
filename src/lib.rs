@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
 mod console;
+mod interfaces;
 mod logger;
 mod module;
 mod pattern;
+mod ptr;
 mod util;
 
 use std::ffi::c_void;
