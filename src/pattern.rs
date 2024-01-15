@@ -65,7 +65,7 @@ impl Pattern {
             if Self::matches(pattern, &hay[offset + sub_offset..]) {
                 return Some(offset + sub_offset);
             }
-            offset += sub_offset;
+            offset += sub_offset + 1;
         }
         None
     }
