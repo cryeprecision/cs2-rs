@@ -39,6 +39,7 @@ dependencies = [
  "retour",
  "simplelog",
  "thiserror",
+ "time",
  "windows",
 ]
 

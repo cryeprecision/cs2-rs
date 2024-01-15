@@ -51,7 +51,7 @@ impl Pattern {
         }
     }
 
-    pub fn find(&self, hay: &[u8]) -> Option<usize> {
+    pub fn find_in(&self, hay: &[u8]) -> Option<usize> {
         let skipped_wildcards = self.inner.iter().position(|p| !p.is_wildcard())?;
 
         let hay = &hay[skipped_wildcards..];
@@ -83,7 +83,7 @@ impl FromStr for Pattern {
         }
 
         fn parse_token(input: &mut &[u8]) -> Result<PatternByte, Error> {
-            if input.len() > 0 && (*input)[0] == b'?' {
+            if !input.is_empty() && (*input)[0] == b'?' {
                 *input = &(*input)[1..];
                 Ok(PatternByte::Wildcard)
             } else if input.len() > 1 {
@@ -97,7 +97,7 @@ impl FromStr for Pattern {
         }
 
         fn parse_whitespace(input: &mut &[u8]) -> Result<(), Error> {
-            if input.len() > 0 && (*input)[0] == b' ' {
+            if !input.is_empty() && (*input)[0] == b' ' {
                 *input = &(*input)[1..];
                 Ok(())
             } else {
@@ -170,7 +170,7 @@ mod test_pattern {
         let err = Pattern::from_str("").unwrap_err();
         assert_eq!(err, Error::Empty);
 
-        // nice bye
+        // nice byte
         let err = Pattern::from_str("ZZ").unwrap_err();
         assert_eq!(err, Error::Malformed);
 
@@ -183,6 +183,6 @@ mod test_pattern {
     fn finds() {
         let pattern: Pattern = "? ? 01 ? 03".parse().unwrap();
         let hay = &[0x00, 0x01, 0x01, 0x02, 0x03];
-        assert_eq!(pattern.find(hay), Some(0));
+        assert_eq!(pattern.find_in(hay), Some(0));
     }
 }

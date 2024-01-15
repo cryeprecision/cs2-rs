@@ -9,18 +9,15 @@ crate-type = ["cdylib"]
 [dependencies]
 # logging
 log = { version = "0" }
-simplelog = { version = "0", default-features = false, features = [
-    "local-offset",
-] }
+simplelog = { version = "0", default-features = false, features = ["local-offset"] }
+time = { version = "0" }
 
 # error handling
 anyhow = { version = "1" }
 thiserror = { version = "1" }
 
 # vectorized byte-searching for patterns
-memchr = { version = "2", default-features = false, features = [
-    "std",
-] }
+memchr = { version = "2", default-features = false, features = ["std"] }
 
 # detouring functions
 retour = { version = "0" }
