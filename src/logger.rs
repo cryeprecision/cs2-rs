@@ -10,7 +10,7 @@ use crate::util;
 pub unsafe fn get_oof_dir() -> anyhow::Result<PathBuf> {
     let path = {
         let path_wide = SHGetKnownFolderPath(&FOLDERID_Documents, KF_FLAG_DEFAULT, HANDLE(0))
-            .context("couldn't get path to documents folder")?;
+            .context("get path to documents folder")?;
         let path = util::wide_string_to_utf8(path_wide.as_wide())?;
         CoTaskMemFree(Some(path_wide.0 as _));
 
@@ -21,7 +21,7 @@ pub unsafe fn get_oof_dir() -> anyhow::Result<PathBuf> {
 
     match std::fs::metadata(&path) {
         Err(_) => {
-            std::fs::create_dir(&path).context("couldn't create oof-software directory")?;
+            std::fs::create_dir(&path).context("create oof-software directory")?;
         }
         Ok(metadata) if !metadata.is_dir() => {
             return Err(anyhow::anyhow!(
@@ -52,8 +52,8 @@ pub fn init_logger() -> anyhow::Result<()> {
         .create(true)
         .append(true)
         .open(log_file_path)
-        .context("couldn't open logfile for writing")?;
+        .context("open logfile for writing")?;
 
     simplelog::WriteLogger::init(simplelog::LevelFilter::Info, config.build(), file)
-        .context("couldn't init term logger")
+        .context("init term logger")
 }

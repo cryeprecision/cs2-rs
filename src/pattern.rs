@@ -38,7 +38,7 @@ impl PatternByte {
 }
 
 #[derive(Debug)]
-struct Pattern {
+pub struct Pattern {
     inner: Vec<PatternByte>,
 }
 
@@ -181,8 +181,8 @@ mod test_pattern {
 
     #[test]
     fn finds() {
-        let pattern: Pattern = "? 01 ? 03".parse().unwrap();
-        let hay = &[0x00, 0x01, 0x02, 0x03];
+        let pattern: Pattern = "? ? 01 ? 03".parse().unwrap();
+        let hay = &[0x00, 0x01, 0x01, 0x02, 0x03];
         assert_eq!(pattern.find(hay), Some(0));
     }
 }
