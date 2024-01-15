@@ -20,6 +20,23 @@ pub struct InterfaceRegister {
     next: *const InterfaceRegister,
 }
 
+pub struct RegisterIterator {
+    current_node: *const InterfaceRegister,
+}
+
+impl Iterator for RegisterIterator {
+    type Item = &'static InterfaceRegister;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_node.is_null() {
+            // reached the end of the linked list
+            return None;
+        }
+        // SAFETY: `self.ptr` is not null because of the check above
+        let next = unsafe { (*self.current_node).next };
+        Some(unsafe { &*std::mem::replace(&mut self.current_node, next) })
+    }
+}
+
 impl InterfaceRegister {
     /// Get the interface name. Does a `strlen` call and utf-8 validation.
     pub unsafe fn name(&self) -> anyhow::Result<&'static str> {
@@ -29,58 +46,44 @@ impl InterfaceRegister {
     }
 
     /// Get the first node of the interface register list
-    pub unsafe fn find_list(module: &Module) -> anyhow::Result<*const InterfaceRegister> {
+    pub unsafe fn iter_from_module(module: &Module) -> anyhow::Result<RegisterIterator> {
         let create_interface = module
             .get_export(s!("CreateInterface"))
             .context("find 'CreateInterface' export")?;
 
         // https://github.com/maecry/asphyxia-cs2/blob/cd9e151cf92a2bcad43809a12555bdda7f7d5067/cstrike/core/interfaces.cpp#L42
-        Ok(*ptr::resolve_relative_address(create_interface, 0x03, 0x07)
-            .cast::<*const InterfaceRegister>())
+        let first_node = ptr::resolve_relative_address(create_interface, 0x03, 0x07)
+            .cast::<*const InterfaceRegister>()
+            .read();
+
+        Ok(RegisterIterator {
+            current_node: first_node,
+        })
     }
-}
 
-pub struct ReigsterIterator {
-    ptr: *const InterfaceRegister,
-}
-
-pub fn register_iterator(register_list: *const InterfaceRegister) -> ReigsterIterator {
-    ReigsterIterator { ptr: register_list }
-}
-
-impl Iterator for ReigsterIterator {
-    type Item = &'static InterfaceRegister;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.ptr.is_null() {
-            // reached the end of the linked list
-            return None;
-        }
-        // SAFETY: `self.ptr` is not null because of the check above
-        let next = unsafe { (*self.ptr).next };
-        Some(unsafe { &*std::mem::replace(&mut self.ptr, next) })
+    /// Get all interface names (excluding names that aren't valid utf-8)
+    pub unsafe fn all_interfaces(module: &Module) -> anyhow::Result<Vec<String>> {
+        Ok(Self::iter_from_module(module)?
+            .map(|register| register.name().ok())
+            .filter_map(|register| register.map(String::from))
+            .collect())
     }
-}
 
-unsafe fn find_interface_register(
-    register_list: *const InterfaceRegister,
-    name: &str,
-) -> anyhow::Result<&'static InterfaceRegister> {
-    for register in register_iterator(register_list) {
-        if register.name()? == name {
-            return Ok(register);
-        }
+    pub unsafe fn find_interface_register(
+        module: &Module,
+        name: &str,
+    ) -> anyhow::Result<&'static InterfaceRegister> {
+        Self::iter_from_module(module)?
+            .find(|register| register.name().map(|name_| name_ == name).unwrap_or(false))
+            .context("couldn't find interface register")
     }
-    Err(anyhow::anyhow!("couldn't find interface register"))
-}
 
-pub unsafe fn capture_interface(
-    register_list: *const InterfaceRegister,
-    name: &str,
-) -> anyhow::Result<*mut u8> {
-    let register = find_interface_register(register_list, name)?;
-    let interface = (register.create)();
+    pub unsafe fn capture_interface(module: &Module, name: &str) -> anyhow::Result<*mut u8> {
+        let register = Self::find_interface_register(module, name)?;
+        let interface = (register.create)();
 
-    (!interface.is_null())
-        .then_some(interface)
-        .context("interface create function returned nullptr")
+        (!interface.is_null())
+            .then_some(interface)
+            .context("interface create function returned nullptr")
+    }
 }

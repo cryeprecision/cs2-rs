@@ -4,7 +4,7 @@ use crate::ptr::get_vfunc_ptr_as;
 use crate::str::{c_str_to_str_slice, Error};
 
 pub struct EngineClient {
-    this_ptr: *mut u8,
+    pub this_ptr: *mut u8,
 }
 
 impl EngineClient {

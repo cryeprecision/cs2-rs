@@ -59,6 +59,7 @@ impl Module {
     pub fn module_handle(&self) -> HMODULE {
         self.handle
     }
+
     /// Get a pointer to the base address of the module.
     pub fn module_base(&self) -> *const u8 {
         self.handle.0 as _
@@ -71,6 +72,7 @@ impl Module {
             self.headers.nt.OptionalHeader.SizeOfImage as usize,
         )
     }
+
     /// Get a slice over the code section of the module.
     pub unsafe fn code_section(&self) -> &'static [u8] {
         std::slice::from_raw_parts(
