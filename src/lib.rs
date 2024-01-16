@@ -81,6 +81,12 @@ unsafe fn on_dll_process_attach() -> anyhow::Result<()> {
         log::info!("engine.is_connected() = {}", engine.is_connected());
         log::info!("engine.is_in_game() = {}", engine.is_in_game());
         log::info!("engine.get_level_name() = {:?}", engine.get_level_name());
+
+        let mem_alloc = &ctx.interfaces.mem_alloc;
+        let bytes = mem_alloc.alloc(1 << 10); // allocate 1KiB
+        log::info!("mem_alloc.alloc() = {:p}", bytes);
+        log::info!("mem_alloc.get_size() = {}", mem_alloc.get_size(bytes));
+        mem_alloc.free(bytes);
     }
 
     // example of hooking a function

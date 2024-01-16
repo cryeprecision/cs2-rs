@@ -26,6 +26,7 @@ impl MemAlloc {
     }
 
     pub unsafe fn get_size(&self, mem: *mut u8) -> usize {
+        // FIXME: This returns bullshit
         type Fn = unsafe extern "win64" fn(this: *mut u8, mem: *mut u8) -> usize;
         get_vfunc_ptr_as::<Fn>(self.this_ptr, 21)(self.this_ptr, mem)
     }
