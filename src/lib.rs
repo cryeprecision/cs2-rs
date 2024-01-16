@@ -1,28 +1,20 @@
 #![allow(dead_code)]
 
-mod console;
-mod interfaces;
-mod logger;
-mod module;
-mod pattern;
-mod ptr;
-mod str;
-mod util;
+mod oof;
+mod sdk;
 
 use std::ffi::{c_char, c_void};
 
 use anyhow::Context;
 use retour::GenericDetour;
-use windows::core::{s, PCSTR};
+use windows::core::s;
 use windows::Win32::Foundation::*;
 use windows::Win32::System::SystemServices::*;
 use windows::Win32::System::Threading::*;
 
-use crate::interfaces::engine_client::EngineClient;
-use crate::interfaces::InterfaceRegister;
-use crate::module::Module;
-use crate::pattern::Pattern;
-use crate::ptr::get_vfunc_ptr_as;
+use crate::oof::ptr::get_vfunc_ptr_as;
+use crate::sdk::interfaces::engine_client::EngineClient;
+use crate::sdk::interfaces::InterfaceRegister;
 
 #[no_mangle]
 #[allow(non_snake_case)]
@@ -46,17 +38,8 @@ unsafe extern "system" fn DllMain(_module: HINSTANCE, reason: u32, _reserved: *m
     }
 }
 
-const LEVEL_INIT: &str = "48 89 5C 24 ? 56 48 83 EC ? 48 8B 0D ? ? ? ? 48 8B F2";
-const LEVEL_SHUTDOWN: &str = "48 83 EC ? 48 8B 0D ? ? ? ? 48 8D 15 ? ? ? ? 45 33 C9 45 33 C0 48 \
-                              8B 01 FF 50 ? 48 85 C0 74 ? 48 8B 0D ? ? ? ? 48 8B D0 4C 8B 01 48 \
-                              83 C4 ? 49 FF 60 ? 48 83 C4 ? C3 CC CC CC 48 83 EC ? 4C 8B D9";
-
-const CLIENT_DLL: PCSTR = s!("client.dll");
-const SCHEMASYSTEM_DLL: PCSTR = s!("schemasystem.dll");
-const ENGINE2_DLL: PCSTR = s!("engine2.dll");
-
 unsafe fn on_dll_process_attach() -> anyhow::Result<()> {
-    logger::init_logger().unwrap();
+    oof::logger::init_logger().unwrap();
 
     // make sure panics are logged to the logfile
     std::panic::set_hook(Box::new(|info| {
@@ -67,50 +50,31 @@ unsafe fn on_dll_process_attach() -> anyhow::Result<()> {
     let thread = GetCurrentThreadId();
     log::info!("attached to process {} with thread {}", process, thread);
 
-    let client_dll = Module::new(CLIENT_DLL).context("find client.dll")?;
-    let engine2_dll = Module::new(ENGINE2_DLL).context("find engine2.dll")?;
-    let schema_system_dll = Module::new(SCHEMASYSTEM_DLL).context("find schemasystem.dll")?;
+    let modules = sdk::modules::Modules::new().context("find modules")?;
 
     // pattern scanning example
-    {
-        // https://github.com/maecry/asphyxia-cs2/blob/cd9e151cf92a2bcad43809a12555bdda7f7d5067/cstrike/core/hooks.cpp#L98
-        let level_init = LEVEL_INIT
-            .parse::<Pattern>()
-            .context("parse level_init pattern")?
-            .find_in(client_dll.code_section())
-            .map(|offset| client_dll.code_section().as_ptr().add(offset))
-            .context("find level_init pattern")?;
-        log::info!("found level_init at {:p}", level_init);
-
-        // https://github.com/maecry/asphyxia-cs2/blob/cd9e151cf92a2bcad43809a12555bdda7f7d5067/cstrike/core/hooks.cpp#L103
-        let level_shutdown = LEVEL_SHUTDOWN
-            .parse::<Pattern>()
-            .context("parse level_shutdown pattern")?
-            .find_in(client_dll.code_section())
-            .map(|offset| client_dll.code_section().as_ptr().add(offset))
-            .context("find level_shutdown pattern")?;
-        log::info!("found level_shutdown at {:p}", level_shutdown);
-    }
+    let patterns = sdk::patterns::Patterns::new(&modules).context("find patterns")?;
+    log::info!("patterns: {:#?}", patterns);
 
     // log all interfaces because why not
     {
         log::info!(
             "client.dll interfaces: {:?}",
-            InterfaceRegister::all_interfaces(&client_dll)
+            InterfaceRegister::all_interfaces(&modules.client)
         );
         log::info!(
             "schemasystem.dll interfaces: {:?}",
-            InterfaceRegister::all_interfaces(&schema_system_dll)
+            InterfaceRegister::all_interfaces(&modules.schema_system)
         );
         log::info!(
             "engine2.dll interfaces: {:?}",
-            InterfaceRegister::all_interfaces(&engine2_dll)
+            InterfaceRegister::all_interfaces(&modules.engine2)
         );
     }
 
     // get the engine client pointer and use our wrapper for calling vfuncs
     let engine = EngineClient::new(
-        InterfaceRegister::capture_interface(&engine2_dll, "Source2EngineToClient001")
+        InterfaceRegister::capture_interface(&modules.engine2, "Source2EngineToClient001")
             .context("get engine client pointer")?,
     );
 

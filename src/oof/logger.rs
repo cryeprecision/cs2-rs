@@ -6,7 +6,7 @@ use windows::Win32::Foundation::*;
 use windows::Win32::System::Com::*;
 use windows::Win32::UI::Shell::*;
 
-use crate::util;
+use super::util;
 
 pub unsafe fn get_oof_dir() -> anyhow::Result<PathBuf> {
     let path = {

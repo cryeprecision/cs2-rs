@@ -5,8 +5,8 @@ use std::ffi::{c_char, CStr};
 use anyhow::Context;
 use windows::core::s;
 
-use crate::module::Module;
-use crate::ptr;
+use crate::oof::module::Module;
+use crate::oof::ptr::resolve_relative_address;
 
 type CreateInterface = unsafe extern "win64" fn() -> *mut u8;
 
@@ -52,7 +52,7 @@ impl InterfaceRegister {
             .context("find 'CreateInterface' export")?;
 
         // https://github.com/maecry/asphyxia-cs2/blob/cd9e151cf92a2bcad43809a12555bdda7f7d5067/cstrike/core/interfaces.cpp#L42
-        let first_node = ptr::resolve_relative_address(create_interface, 0x03, 0x07)
+        let first_node = resolve_relative_address(create_interface, 0x03, 0x07)
             .cast::<*const InterfaceRegister>()
             .read();
 
