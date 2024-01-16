@@ -44,6 +44,14 @@ pub struct Module {
     headers: ModuleHeaders64,
 }
 
+impl std::fmt::Debug for Module {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Module")
+            .field("handle", &(self.handle.0 as *mut u8))
+            .finish()
+    }
+}
+
 impl Module {
     pub unsafe fn new(module_name: PCSTR) -> anyhow::Result<Module> {
         let handle = get_module_handle(module_name).context("get a handle to the module")?;

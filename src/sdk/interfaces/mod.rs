@@ -1,4 +1,5 @@
 pub mod engine_client;
+pub mod mem_alloc;
 
 use std::ffi::{c_char, CStr};
 
@@ -69,6 +70,8 @@ impl InterfaceRegister {
             .collect())
     }
 
+    /// Find a interface register with the given name in the linked list of
+    /// registers
     pub unsafe fn find_interface_register(
         module: &Module,
         name: &str,
@@ -78,6 +81,8 @@ impl InterfaceRegister {
             .context("couldn't find interface register")
     }
 
+    /// Find a interface register with the given name and call its `create`
+    /// function
     pub unsafe fn capture_interface(module: &Module, name: &str) -> anyhow::Result<*mut u8> {
         let register = Self::find_interface_register(module, name)?;
         let interface = (register.create)();

@@ -3,6 +3,7 @@ use std::ffi::*;
 use crate::oof::ptr::get_vfunc_ptr_as;
 use crate::oof::str::{c_str_to_str_slice, Error};
 
+#[derive(Debug)]
 pub struct EngineClient {
     pub this_ptr: *mut u8,
 }

@@ -21,6 +21,7 @@ const SCHEMASYSTEM_DLL: PCSTR = s!("schemasystem.dll");
 const SDL3_DLL: PCSTR = s!("SDL3.dll");
 const TIER0_DLL: PCSTR = s!("tier0.dll");
 
+#[derive(Debug)]
 pub struct Modules {
     pub client: Module,
     pub dbg_help: Module,
@@ -34,7 +35,7 @@ pub struct Modules {
     pub particles: Module,
     pub render_system: Module,
     pub resource_system: Module,
-    pub scenesystem: Module,
+    pub scene_system: Module,
     pub schema_system: Module,
     pub sdl3: Module,
     pub tier0: Module,
@@ -58,7 +59,7 @@ impl Modules {
             render_system: Module::new(RENDERSYSTEM_DLL).context("find render_system module")?,
             resource_system: Module::new(RESOURCESYSTEM_DLL)
                 .context("find resource_system module")?,
-            scenesystem: Module::new(SCENESYSTEM_DLL).context("find scenesystem module")?,
+            scene_system: Module::new(SCENESYSTEM_DLL).context("find scenesystem module")?,
             schema_system: Module::new(SCHEMASYSTEM_DLL).context("find schema_system module")?,
             sdl3: Module::new(SDL3_DLL).context("find sdl3 module")?,
             tier0: Module::new(TIER0_DLL).context("find tier0 module")?,

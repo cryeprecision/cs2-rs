@@ -1,3 +1,6 @@
+//! This module contains some general utilities that are not specific to
+//! Counter-Strike.
+
 pub mod console;
 pub mod logger;
 pub mod module;

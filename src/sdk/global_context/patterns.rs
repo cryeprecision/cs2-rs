@@ -16,8 +16,8 @@ unsafe fn find_pattern(pattern: &str, module: &Module) -> anyhow::Result<*mut u8
 mod client_dll {
     use anyhow::Context;
 
+    use super::super::modules::Modules;
     use super::find_pattern;
-    use crate::sdk::modules::Modules;
 
     const LEVEL_INIT: &str = "48 89 5C 24 ? 56 48 83 EC ? 48 8B 0D ? ? ? ? 48 8B F2";
     const LEVEL_SHUTDOWN: &str = "48 83 EC ? 48 8B 0D ? ? ? ? 48 8D 15 ? ? ? ? 45 33 C9 45 33 C0 \
@@ -68,8 +68,8 @@ mod client_dll {
 mod particles_dll {
     use anyhow::Context;
 
+    use super::super::modules::Modules;
     use super::find_pattern;
-    use crate::sdk::modules::Modules;
 
     const FIND_KEY_VAR: &str = "48 89 5C 24 ? 57 48 81 EC ? ? ? ? 33 C0 8B DA";
     const SET_MATERIAL_SHADER_TYPE: &str =
@@ -93,11 +93,14 @@ mod particles_dll {
     impl Patterns {
         pub unsafe fn new(modules: &Modules) -> anyhow::Result<Patterns> {
             Ok(Patterns {
-                find_key_var: find_pattern(FIND_KEY_VAR, &modules.client)
+                find_key_var: find_pattern(FIND_KEY_VAR, &modules.particles)
                     .context("find FIND_KEY_VAR pattern")?,
-                set_material_shader_type: find_pattern(SET_MATERIAL_SHADER_TYPE, &modules.client)
-                    .context("find SET_MATERIAL_SHADER_TYPE pattern")?,
-                set_material: find_pattern(SET_MATERIAL, &modules.client)
+                set_material_shader_type: find_pattern(
+                    SET_MATERIAL_SHADER_TYPE,
+                    &modules.particles,
+                )
+                .context("find SET_MATERIAL_SHADER_TYPE pattern")?,
+                set_material: find_pattern(SET_MATERIAL, &modules.particles)
                     .context("find SET_MATERIAL pattern")?,
             })
         }
@@ -107,8 +110,8 @@ mod particles_dll {
 mod render_system_dll {
     use anyhow::Context;
 
+    use super::super::modules::Modules;
     use super::find_pattern;
-    use crate::sdk::modules::Modules;
 
     const SWAP_CHAIN: &str = "66 0F 7F 05 ? ? ? ? 66 0F 7F 0D ? ? ? ? 48 89 35";
 
@@ -120,7 +123,7 @@ mod render_system_dll {
     impl Patterns {
         pub unsafe fn new(modules: &Modules) -> anyhow::Result<Patterns> {
             Ok(Patterns {
-                swap_chain: find_pattern(SWAP_CHAIN, &modules.client)
+                swap_chain: find_pattern(SWAP_CHAIN, &modules.render_system)
                     .context("find SWAP_CHAIN pattern")?,
             })
         }
@@ -130,8 +133,8 @@ mod render_system_dll {
 mod scene_system_dll {
     use anyhow::Context;
 
+    use super::super::modules::Modules;
     use super::find_pattern;
-    use crate::sdk::modules::Modules;
 
     const DRAW_OBJECT: &str = "48 8B C4 48 89 50 ? 55 41 56";
 
@@ -143,7 +146,7 @@ mod scene_system_dll {
     impl Patterns {
         pub unsafe fn new(modules: &Modules) -> anyhow::Result<Patterns> {
             Ok(Patterns {
-                draw_object: find_pattern(DRAW_OBJECT, &modules.client)
+                draw_object: find_pattern(DRAW_OBJECT, &modules.scene_system)
                     .context("find DRAW_OBJECT pattern")?,
             })
         }
@@ -153,8 +156,8 @@ mod scene_system_dll {
 mod material_system2_dll {
     use anyhow::Context;
 
+    use super::super::modules::Modules;
     use super::find_pattern;
-    use crate::sdk::modules::Modules;
 
     const CREATE_MATERIAL: &str =
         "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8D 0D";
@@ -167,7 +170,7 @@ mod material_system2_dll {
     impl Patterns {
         pub unsafe fn new(modules: &Modules) -> anyhow::Result<Patterns> {
             Ok(Patterns {
-                crate_material: find_pattern(CREATE_MATERIAL, &modules.client)
+                crate_material: find_pattern(CREATE_MATERIAL, &modules.material_system)
                     .context("find CREATE_MATERIAL pattern")?,
             })
         }
